@@ -5,7 +5,6 @@ dist:
   port: 8000
 
 cluster:
-  n: 5
   ports:
     - 8081
     - 8082

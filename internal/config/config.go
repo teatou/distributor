@@ -22,7 +22,6 @@ type DistConfig struct {
 }
 
 type ClusterConfig struct {
-	N     int   `yaml:"n"`
 	Ports []int `yaml:"ports"`
 }
 

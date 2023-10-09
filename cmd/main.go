@@ -3,9 +3,8 @@ package main
 import (
 	"os"
 
-	clusterapp "github.com/teatou/distributor/internal/clusterApp"
+	serverpool "github.com/teatou/distributor/internal/app/serverPool"
 	"github.com/teatou/distributor/internal/config"
-	distapp "github.com/teatou/distributor/internal/distApp"
 	"github.com/teatou/distributor/pkg/mylogger"
 )
 
@@ -28,48 +27,7 @@ func main() {
 	}
 	defer logger.Sync()
 
-	// for _, port := range cfg.Cluster.Ports {
-	// 	serverUrl, err := url.Parse(fmt.Sprintf("localhost:%d", port))
-	// 	if err != nil {
-	// 		panic("cannot parse config ports")
-	// 	}
-	// 	proxy := httputil.NewSingleHostReverseProxy(serverUrl)
-	// 	proxy.ErrorHandler = func(writer http.ResponseWriter, request *http.Request, e error) {
-	// 		log.Printf("[%s] %s\n", serverUrl.Host, e.Error())
-	// 		retries := GetRetryFromContext(request)
-	// 		if retries < 3 {
-	// 			select {
-	// 			case <-time.After(10 * time.Millisecond):
-	// 				ctx := context.WithValue(request.Context(), Retry, retries+1)
-	// 				proxy.ServeHTTP(writer, request.WithContext(ctx))
-	// 			}
-	// 			return
-	// 		}
-
-	// 		// after 3 retries, mark this backend as down
-	// 		serverPool.MarkBackendStatus(serverUrl, false)
-
-	// 		// if the same request routing for few attempts with different backends, increase the count
-	// 		attempts := GetAttemptsFromContext(request)
-	// 		log.Printf("%s(%s) Attempting retry %d\n", request.RemoteAddr, request.URL.Path, attempts)
-	// 		ctx := context.WithValue(request.Context(), Attempts, attempts+1)
-	// 		lb(writer, request.WithContext(ctx))
-	// 	}
-
-	// 	serverPool.AddBackend(&Backend{
-	// 		URL:          serverUrl,
-	// 		Alive:        true,
-	// 		ReverseProxy: proxy,
-	// 	})
-	// 	log.Printf("Configured server: %s\n", serverUrl)
-	// }
-
-	if err := distapp.New(val); err != nil {
-		panic(err)
-	}
-
-	err = clusterapp.New(val)
-	if err != nil {
+	if err = serverpool.New(cfg, logger); err != nil {
 		panic(err)
 	}
 }
