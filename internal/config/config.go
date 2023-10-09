@@ -8,9 +8,9 @@ import (
 )
 
 type Config struct {
-	Logger LoggerConfig `yaml:"logger"`
-	Dist   DistConfig   `yaml:"dist"`
-	Target TargetConfig `yaml:"target"`
+	Logger  LoggerConfig  `yaml:"logger"`
+	Dist    DistConfig    `yaml:"dist"`
+	Cluster ClusterConfig `yaml:"cluster"`
 }
 
 type LoggerConfig struct {
@@ -18,9 +18,12 @@ type LoggerConfig struct {
 }
 
 type DistConfig struct {
+	Port int `yaml:"port"`
 }
 
-type TargetConfig struct {
+type ClusterConfig struct {
+	N     int   `yaml:"n"`
+	Ports []int `yaml:"ports"`
 }
 
 func LoadConfig(filename string) (*Config, error) {
