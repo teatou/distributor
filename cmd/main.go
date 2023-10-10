@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	serverpool "github.com/teatou/distributor/internal/app/serverPool"
+	"github.com/teatou/distributor/internal/app"
 	"github.com/teatou/distributor/internal/config"
 	"github.com/teatou/distributor/pkg/mylogger"
 )
@@ -13,7 +13,7 @@ const configEnv = "CONFIG"
 func main() {
 	val, ok := os.LookupEnv(configEnv)
 	if !ok {
-		panic("no config env")
+		val = "configs/dev.yaml"
 	}
 
 	cfg, err := config.LoadConfig(val)
@@ -27,7 +27,8 @@ func main() {
 	}
 	defer logger.Sync()
 
-	if err = serverpool.New(cfg, logger); err != nil {
-		panic(err)
+	err = app.New(cfg, logger)
+	if err != nil {
+		panic("server stopped")
 	}
 }

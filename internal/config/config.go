@@ -8,16 +8,16 @@ import (
 )
 
 type Config struct {
-	Logger  LoggerConfig  `yaml:"logger"`
-	Dist    DistConfig    `yaml:"dist"`
-	Cluster ClusterConfig `yaml:"cluster"`
+	Logger   LoggerConfig   `yaml:"logger"`
+	Balancer BalancerConfig `yaml:"balancer"`
+	Cluster  ClusterConfig  `yaml:"cluster"`
 }
 
 type LoggerConfig struct {
 	Level string `yaml:"level"`
 }
 
-type DistConfig struct {
+type BalancerConfig struct {
 	Port int `yaml:"port"`
 }
 
