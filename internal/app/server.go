@@ -49,10 +49,12 @@ func (s *Server) Proxy() *httputil.ReverseProxy {
 
 func (s *Server) SetUnhealthy() {
 	s.Healthy = false
+	log.Printf("%d died", s.Port)
 }
 
 func (s *Server) SetHealthy() {
 	s.Healthy = true
+	log.Printf("%d resurrected", s.Port)
 }
 
 func nextServerLeastActive(servers []*Server) *Server {
