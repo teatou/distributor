@@ -29,6 +29,6 @@ func main() {
 
 	err = app.New(cfg, logger)
 	if err != nil {
-		panic("server stopped")
+		logger.Fatalf("server stopped")
 	}
 }

@@ -44,18 +44,19 @@ func New(cfg *config.Config, logger mylogger.Logger) error {
 
 	go healthCheck(servers)
 	go func() {
-		time.Sleep(12 * time.Second)
+		time.Sleep(100 * time.Second)
 		servers[0].SetUnhealthy()
 	}()
 	go func() {
-		time.Sleep(12 * time.Second)
+		time.Sleep(200 * time.Second)
 		servers[0].SetHealthy()
 	}()
 
-	log.Println("Starting server on port", cfg.Balancer.Port)
+	log.Printf("Starting server on port %d\n", cfg.Balancer.Port)
 	err := http.ListenAndServe(fmt.Sprintf(":%d", cfg.Balancer.Port), nil)
 	if err != nil {
-		log.Fatalf("Error starting server: %s\n", err)
+		logger.Fatalf("Error starting server: %s\n", err)
+		return fmt.Errorf("Error starting server: %s\n", err)
 	}
 
 	return nil
@@ -71,5 +72,4 @@ func healthCheck(servers []*Server) {
 		}
 		log.Println("Health check completed")
 	}
-
 }

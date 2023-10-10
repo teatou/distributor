@@ -24,7 +24,7 @@ func NewServer(port int) *Server {
 
 	srv := http.NewServeMux()
 	srv.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(15 * time.Second)
+		time.Sleep(50 * time.Second)
 		log.Printf("completed %d", port)
 	})
 
