@@ -2,8 +2,10 @@ package httpres
 
 import "net/http"
 
+type MyInt int
+
 const (
-	Attempts int = iota
+	Attempts MyInt = iota
 	Retry
 )
 

@@ -28,19 +28,19 @@ func New(cfg *config.Config, logger mylogger.Logger) error {
 	for _, port := range cfg.Cluster.Ports {
 		serverUrl, err := url.Parse(fmt.Sprintf("localhost:%d", port))
 		if err != nil {
+			logger.Errorf("cannot parse config ports")
 			return fmt.Errorf("cannot parse config ports")
 		}
 
 		proxy := httputil.NewSingleHostReverseProxy(serverUrl)
 		proxy.ErrorHandler = func(writer http.ResponseWriter, request *http.Request, e error) {
-			log.Printf("[%s] %s\n", serverUrl.Host, e.Error())
+			logger.Infof("[%s] %s\n", serverUrl.Host, e.Error())
 			retries := httpres.GetRetryFromContext(request)
 			if retries < 3 {
-				select {
-				case <-time.After(10 * time.Millisecond):
-					ctx := context.WithValue(request.Context(), httpres.Retry, retries+1)
-					proxy.ServeHTTP(writer, request.WithContext(ctx))
-				}
+				<-time.After(10 * time.Millisecond)
+				ctx := context.WithValue(request.Context(), httpres.Retry, retries+1)
+				proxy.ServeHTTP(writer, request.WithContext(ctx))
+
 				return
 			}
 
@@ -49,7 +49,7 @@ func New(cfg *config.Config, logger mylogger.Logger) error {
 
 			// if the same request routing for few attempts with different backends, increase the count
 			attempts := httpres.GetAttemptsFromContext(request)
-			log.Printf("%s(%s) Attempting retry %d\n", request.RemoteAddr, request.URL.Path, attempts)
+			logger.Errorf("%s(%s) Attempting retry %d\n", request.RemoteAddr, request.URL.Path, attempts)
 			ctx := context.WithValue(request.Context(), httpres.Attempts, attempts+1)
 			serverPool.Lb(writer, request.WithContext(ctx))
 		}
@@ -59,7 +59,7 @@ func New(cfg *config.Config, logger mylogger.Logger) error {
 			Alive:        true,
 			ReverseProxy: proxy,
 		})
-		log.Printf("Configured server: %s\n", serverUrl)
+		logger.Infof("Configured server: %s\n", serverUrl)
 	}
 
 	server := http.Server{
@@ -70,9 +70,9 @@ func New(cfg *config.Config, logger mylogger.Logger) error {
 	// start health checking
 	go serverPool.HealthCheck2Mins()
 
-	log.Printf("Load Balancer started at :%d\n", cfg.Dist.Port)
+	logger.Infof("Load Balancer started at :%d\n", cfg.Dist.Port)
 	if err := server.ListenAndServe(); err != nil {
-		log.Fatal(err)
+		logger.Fatalf("server stopped: %v", err)
 		return fmt.Errorf("server stopped")
 	}
 
@@ -116,7 +116,7 @@ func (s *ServerPool) GetNextPeer() *target.Target {
 	return nil
 }
 
-// HealthCheck pings the targets and update the status
+// HealthCheck pings the targets and updates the status
 func (s *ServerPool) HealthCheck() {
 	for _, t := range s.targets {
 		status := "up"
@@ -130,7 +130,7 @@ func (s *ServerPool) HealthCheck() {
 }
 
 func (s *ServerPool) HealthCheck2Mins() {
-	t := time.NewTicker(time.Minute * 2)
+	t := time.NewTicker(time.Second * 10)
 	for {
 		<-t.C
 		log.Println("Starting health check...")
