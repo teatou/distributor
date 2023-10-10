@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/teatou/distributor/internal/config"
@@ -13,23 +12,24 @@ import (
 
 func New(cfg *config.Config, logger mylogger.Logger) error {
 	var servers []*Server
-	for _, serverUrl := range cfg.Cluster.Ports {
-		u, _ := url.Parse(fmt.Sprintf("http://localhost:%d", serverUrl))
-		servers = append(servers, &Server{URL: u})
+	for _, port := range cfg.Cluster.Ports {
+		s := NewServer(port)
+		servers = append(servers, s)
+		s.Start()
 	}
 
-	for _, server := range servers {
-		go func(s *Server) {
-			for range time.Tick(time.Second * 10) {
-				res, err := http.Get(s.URL.String())
-				if err != nil || res.StatusCode >= 500 {
-					s.Healthy = false
-				} else {
-					s.Healthy = true
-				}
-			}
-		}(server)
-	}
+	// for _, server := range servers {
+	// 	go func(s *Server) {
+	// 		for range time.Tick(time.Second * 10) {
+	// 			res, err := http.Get(s.URL.String())
+	// 			if err != nil || res.StatusCode >= 500 {
+	// 				s.Healthy = false
+	// 			} else {
+	// 				s.Healthy = true
+	// 			}
+	// 		}
+	// 	}(server)
+	// }
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		server := nextServerLeastActive(servers)
@@ -42,6 +42,16 @@ func New(cfg *config.Config, logger mylogger.Logger) error {
 		server.Mutex.Unlock()
 	})
 
+	go healthCheck(servers)
+	go func() {
+		time.Sleep(12 * time.Second)
+		servers[0].SetUnhealthy()
+	}()
+	go func() {
+		time.Sleep(12 * time.Second)
+		servers[0].SetHealthy()
+	}()
+
 	log.Println("Starting server on port", cfg.Balancer.Port)
 	err := http.ListenAndServe(fmt.Sprintf(":%d", cfg.Balancer.Port), nil)
 	if err != nil {
@@ -49,4 +59,17 @@ func New(cfg *config.Config, logger mylogger.Logger) error {
 	}
 
 	return nil
+}
+
+func healthCheck(servers []*Server) {
+	t := time.NewTicker(time.Second * 5)
+	for {
+		<-t.C
+		log.Println("Starting health check...")
+		for _, s := range servers {
+			log.Printf("server %d: %d conns, healthy: %v", s.Port, s.ActiveConnections, s.Healthy)
+		}
+		log.Println("Health check completed")
+	}
+
 }
